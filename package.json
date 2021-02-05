@@ -1,7 +1,7 @@
 {
   "name": "mapu",
   "description": "a geographic visualization tool based on amap",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": false,
   "main": "dist/index.js",
   "scripts": {
