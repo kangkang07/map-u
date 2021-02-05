@@ -70,8 +70,14 @@ export declare class MapElement {
     bounds:Bounds
 
     render(rctx?:IRenderContext): Promise<ImageBitmap|void>
+    renderView(): void
     contain(pos:LngLat):boolean
     addChildren(el:MapElement)
+    removeChildren(el:MapElement)
+
+    hide(): void
+    show(): void
+
     clear(repaint?:boolean)
     setZIndex(zIndex:number)
     getZIndex()
@@ -79,6 +85,8 @@ export declare class MapElement {
     on(eventName:EventType, handler:(el:MapEvent)=>any)
     off(eventName:EventType, handler?:(el:MapEvent)=>any)
     trigger(eventName:EventType, ev:MapEvent)
+
+    makeBounds(): Bounds
 
 }
 

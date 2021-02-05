@@ -14,9 +14,7 @@ export class Marker extends MapElement {
         this.style = Object.assign({},this.style, style)
     }
     async customRender(rctx:IRenderContext, renderStyle:IShapeStyle) {
-        if(!this.visible){
-            return null
-        }
+      
         let ctx = rctx.ctx
         ctx.fillStyle = renderStyle.fillColor
         ctx.strokeStyle = renderStyle.strokeColor

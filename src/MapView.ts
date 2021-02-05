@@ -7,32 +7,40 @@ import { EventManager } from './Utils/eventManager';
 const AMap:any = (window as any).AMap
 export class MapView extends MapElement{
 
-    h3HexagonStyle: IShapeStyle = {
-        fillColor: 'rgba(0,44,222,.3)', // 多边形填充颜色
-        strokeWeight: 0, // 线条宽度，默认为 1
-        // strokeColor: 'rgba(0,44,222,.3)', // 线条颜色
-        strokeColor: 'rgba(0,44,222,0)', // 线条颜色
-    }
+    /**
+     * 高德地图实例
+     * Gaode map instance
+     */
     map: AMap.Map
     ready: -1|0|1 = 0
 
     private readyQueue = new AsyncQueue()
-    readyPromise: IPromiseCallback = null
 
+    /**
+     * the map's zoom level.
+     */
     zoomLevel?:number
 
+    /**
+     * the map rectangle bounds
+     */
     mapBounds:[LngLat, LngLat] = [[0,0],[0,0]]
-    // pixiApp: PIXI.Application = null
     
-    
- 
+    /**
+     * the canvas layer of Gaode map
+     */
     customCanvasLayer: any
 
+    /**
+     * the flag for render 
+     * when called render, the canvas is rendered in next event loop
+     */
     private renderFlag:boolean = false
 
-    // 当发生交互事件时，置为true，之后触发一次渲染，并在渲染时触发事件处理
-    canvasEvent: MouseEvent = null
-
+    // 空事件处理。当没有触发任何定义事件的时候，触发空事件
+    /**
+     * when an event is triggered while no custom handler was called, will call this event
+     */
     eventEmptyManager:EventManager<MapEvent> = new EventManager()
 
     // 事件相关
@@ -42,8 +50,6 @@ export class MapView extends MapElement{
     protected zoomLayers = [5,10]
 
     private renderedImg?: any
-    private latRange?: any[]
-    private lngRange?: any[]
 
     extraData:any = {}
     
@@ -59,8 +65,7 @@ export class MapView extends MapElement{
     async init(el: any, config:any, plugins: string[] = ['AMap.MouseTool']) {
         this.map = new AMap.Map(el, config) 
         
-        return new Promise((resolve, reject) => {
-            this.readyPromise = {resolve,reject}
+        return new Promise<void>((resolve, reject) => {
             this.map.plugin(plugins, () => {
                 // this.pixiApp = new PIXI.Application({
                 //     transparent:true,
@@ -105,59 +110,10 @@ export class MapView extends MapElement{
                     this.zoomLevel = this.map.getZoom()
                 
                     rctx.mapBounds = this.mapBounds
-                    // if (!this.latRange) {
-                    //     this.latRange = latRange
-                    //     this.lngRange = lngRange
-                    // }
-                    // // 如果已经有了渲染好的图形，只是做缩放平移
-                    // const calcCenter = (range: any[]) => {
-                    //     return (range[0] + range[1]) / 2
-                    // }
-                    // const calcOffset = (range1, range2) => {
-                    //     return calcCenter(range1) - calcCenter(range2)
-                    // }
-                    // if (this.renderedImg) {
-                    //     let scale = Math.abs( (this.latRange[1] - this.latRange[0]) / (latRange[1] - latRange[0]))
-                    //     let offsetX = calcOffset(lngRange, this.lngRange)
-                    //     let offsetY = calcOffset(latRange, this.latRange)
-                    //     console.log(scale, offsetX, offsetY)
-                    //     rctx.ctx.translate(offsetX, offsetY)
-                    //     rctx.ctx.scale(scale,scale)
-                    //     this.latRange = latRange
-                    //     this.lngRange = lngRange
-
-                    // } else {
-
-                    //     this.layers.sort((l1,l2)=>l1.zIndex - l2.zIndex).forEach(layer => {
-                    //         if (layer.visible) {
-                    //             layer.render(rctx)
-                    //         }
-                    //     })
-                    //     this.renderedImg = true
-                    // }
-                    // if (rctx.callByMap) {
-                    //     // this.pixiApp.stage.setTransform(Math.random() * 100, Math.random()*100)
-                    //     // console.log('map transform')
-                    // } else {
-                    //     console.log('update data')
-                    //     // this.pixiApp.stage.removeChildren()
-                    //     this.layers.sort((l1,l2)=>l1.zIndex - l2.zIndex).forEach(layer => {
-                    //         if (layer.visible) {
-                    //             layer.render(rctx)
-                    //         }
-                    //     })
-                            
-
-                    // }
                     this.eachChildren(ele=>{
                         // console.log('each ch of view', ele)
                         ele.render(rctx)
                     })
-                    // this.layers.sort((l1,l2)=>l1.zIndex - l2.zIndex).forEach(layer => {
-                    //     if (layer.visible) {
-                    //         layer.render(rctx)
-                    //     }
-                    // })
                    
                 }
                 ['click','dblclick', 'mousemove'].forEach((ename:EventType) => {
@@ -172,7 +128,6 @@ export class MapView extends MapElement{
                         }
 
                         let lnglat = this.pixelToLngLat(event.offsetX, event.offsetY)
-                        // console.log(lnglat, event)
               
                         const mapEvent = MapEvent.create(event, lnglat)
                         
@@ -250,8 +205,6 @@ export class MapView extends MapElement{
       
         let lngRatio = (lnglat[0] - sw[0]) / (ne[0] - sw[0])
         let latRatio = (lnglat[1] - sw[1]) / (ne[1] - sw[1])
-        // let x = Math.round(lngRatio * this.canvas.width)
-        // let y = Math.round((1 - latRatio) * this.canvas.height)
         let x = lngRatio * this.canvas.width
         let y = (1 - latRatio) * this.canvas.height
         return { x, y }

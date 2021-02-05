@@ -17,26 +17,28 @@ class RankLayer {
 export abstract class MapElement {
     id:string = nanoid()
     name?:string
-    
-    private childrenCollection: SortedMap<RankLayer> = new SortedMap()
-    private zIndex:number = 0
-
     parent: MapElement
     type: ElementType
+    style:IShapeStyle = {
+        strokeColor:'transparent',
+        strokeWidth:1
+    }
+    view:MapView
+    dataset:any = {}
+    bounds:Bounds
 
+
+    private childrenSortedMap: SortedMap<RankLayer> = new SortedMap()
+    private childrenCollection: {[id: string]:MapElement} = {}
+    private zIndex:number = 0
     protected eventManager:EventManager<MapEvent> = new EventManager()
+    protected canvas?: HTMLCanvasElement | OffscreenCanvas
+    protected bitmap:ImageBitmap
 
     listeners:Map<string,((ev:MapEvent)=>any)[]> = new Map()
     visible:boolean = true
 
     tiles:ITile[] = []
-
-    dataset:any = {}
-    view:MapView
-    style:IShapeStyle = {
-        strokeColor:'transparent',
-        strokeWidth:1
-    }
 
     // this is a key property
     private _preRender?: boolean = false
@@ -50,15 +52,13 @@ export abstract class MapElement {
             this.canvas.width = 1000
         }
     }
-    protected canvas?: HTMLCanvasElement | OffscreenCanvas
-    protected bitmap:ImageBitmap
-    bounds:Bounds
-
+   
     constructor(){
-       
     }
-
     async render(rctx:IRenderContext): Promise<ImageBitmap|void> {
+        if(!this.visible){
+            return
+        }
         let renderStyle:IShapeStyle = JSON.parse(JSON.stringify(this.style))
         if(this.style.fillImage){
             renderStyle.fillImage.imgData = this.style.fillImage.imgData
@@ -72,12 +72,18 @@ export abstract class MapElement {
         if(this.customRender){
             this.customRender(rctx, renderStyle)
         }
-        if(rctx.offScreen){
-            let data = rctx.ctx.getImageData(0,0,this.canvas.width, this.canvas.height)
-            let bitmap = await createImageBitmap(data)          
-            return bitmap  
-        }
+        // if(rctx.offScreen){
+        //     let data = rctx.ctx.getImageData(0,0,this.canvas.width, this.canvas.height)
+        //     let bitmap = await createImageBitmap(data)          
+        //     return bitmap  
+        // }
         return null
+    }
+
+    renderView(){
+        if(this.view){
+            this.view.render()
+        }
     }
 
     beforeRender:(style:IShapeStyle)=> any
@@ -88,19 +94,31 @@ export abstract class MapElement {
     addChildren(el:MapElement){
         el.parent = this
         el.view = this.view
-        let layer = this.childrenCollection.get(el.zIndex)
+        let layer = this.childrenSortedMap.get(el.zIndex)
         if(!layer){
             layer = new RankLayer(el.zIndex)
-            this.childrenCollection.set(el.zIndex, layer)
+            this.childrenSortedMap.set(el.zIndex, layer)
         }
         layer.elements[el.id] = el
         if(this.view){
-
             this.view.render()
         }
     }
+    removeChildren(el:MapElement){
+        if(this.childrenCollection[el.id]){
+            let layer = this.childrenSortedMap.get(el.zIndex)
+            delete layer.elements[el.id]
+            delete this.childrenCollection[el.id]
+            el.parent = null
+            el.view = null
+            if(this.view){
+                this.view.render()
+            }
+        }
+
+    }
     setChildren(els:MapElement[]){
-        this.childrenCollection.forEach(l=>{
+        this.childrenSortedMap.forEach(l=>{
             l.elements = {}
         })
         els.forEach(ele=>{
@@ -108,23 +126,36 @@ export abstract class MapElement {
         })
     }
     clear(repaint:boolean = true){
-        this.childrenCollection.forEach(l=>{l.elements={}})
+        this.childrenSortedMap.forEach(l=>{l.elements={}})
         if(this.view && repaint){
 
             this.view.render()
         }
     }
+    hide(){
+        if(this.visible){
+            this.visible = false
+            this.renderView()
+        }
+    }
+
+    show(){
+        if(!this.visible){
+            this.visible = true
+            this.renderView()
+        }
+    }
     setZIndex(zIndex:number){
         if(this.parent){
-            let originCollection = this.parent.childrenCollection.get(this.zIndex)
+            let originCollection = this.parent.childrenSortedMap.get(this.zIndex)
             if(originCollection){
                 delete originCollection.elements[this.id]
             }
             this.zIndex = zIndex
-            let newCollection = this.parent.childrenCollection.get(this.zIndex)
+            let newCollection = this.parent.childrenSortedMap.get(this.zIndex)
             if(!newCollection){
                 newCollection = new RankLayer(zIndex)
-                this.parent.childrenCollection.set(zIndex, newCollection)
+                this.parent.childrenSortedMap.set(zIndex, newCollection)
             }
             newCollection.elements[this.id] = this
         }
@@ -137,7 +168,7 @@ export abstract class MapElement {
     }
 
     eachChildren(cb:(item:MapElement) => boolean|void, reverse?:boolean){
-        this.childrenCollection.forEach(layer=>{
+        this.childrenSortedMap.forEach(layer=>{
             let keys = Object.keys(layer.elements)
             for(let key of keys){
                 let flag = cb(layer.elements[key])
@@ -184,24 +215,24 @@ export abstract class MapElement {
 
     protected abstract makeBounds():Bounds
 
-    protected renderOffScreen(){
-        if(isShape(this)){
-        }
-    }
+    // protected renderOffScreen(){
+    //     if(isShape(this)){
+    //     }
+    // }
 
-    protected async renderSingle(z:number, x:number, y:number){
-        let span = zoomLevels[z]
-        let bounds:Bounds = [[span*x, span*y], [span*(x+1),span*(y+1)]]
-        this.canvas.height = 1000
-        this.canvas.width = 1000
-        let ctx = this.canvas.getContext('2d')
-        let data = await this.render({
-            mapBounds:bounds,
-            ctx,
-            offScreen:true
-        })
-        this.bitmap = data as ImageBitmap
-    }
+    // protected async renderSingle(z:number, x:number, y:number){
+    //     let span = zoomLevels[z]
+    //     let bounds:Bounds = [[span*x, span*y], [span*(x+1),span*(y+1)]]
+    //     this.canvas.height = 1000
+    //     this.canvas.width = 1000
+    //     let ctx = this.canvas.getContext('2d')
+    //     let data = await this.render({
+    //         mapBounds:bounds,
+    //         ctx,
+    //         offScreen:true
+    //     })
+    //     this.bitmap = data as ImageBitmap
+    // }
 
 
 }

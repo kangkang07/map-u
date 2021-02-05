@@ -21,36 +21,33 @@ export class Layer extends MapElement {
         this.type = 'layer'
     }
     
-    protected offscreen: boolean = false
-    offscreenAlpha:number = 1
-    offscreenCanvas: HTMLCanvasElement = null
+    // protected offscreen: boolean = false
+    // offscreenAlpha:number = 1
+    // offscreenCanvas: HTMLCanvasElement = null
     // offScreenImgData: ImageBitmap = null
-    offScreenImg: IExtendImageData = null
+    // offScreenImg: IExtendImageData = null
 
-    protected renderBounds: number[][] = []
-    protected dataChangedFlag:boolean = false
+    // setOffScreen(val: boolean, alpha?: number) {
+    //     this.offscreen = val
+    //     if (val) {
+    //         if (!this.offscreenCanvas) {
+    //             this.offscreenCanvas = document.createElement('canvas')
+    //         }
+    //         console.log(alpha, typeof alpha)
+    //         if (alpha !== undefined && typeof alpha == 'number') {
+    //             this.offscreenAlpha = alpha
+    //         }
+    //     } else {
+    //         this.offscreenCanvas = null
+    //     }
+    // }
 
-    setOffScreen(val: boolean, alpha?: number) {
-        this.offscreen = val
-        if (val) {
-            if (!this.offscreenCanvas) {
-                this.offscreenCanvas = document.createElement('canvas')
-            }
-            console.log(alpha, typeof alpha)
-            if (alpha !== undefined && typeof alpha == 'number') {
-                this.offscreenAlpha = alpha
-            }
-        } else {
-            this.offscreenCanvas = null
-        }
-    }
-
-    setPreRender(val: boolean, alpha?:number) {
-        this.preRender = val
-        if (val) {
-            this.setOffScreen(true, alpha)
-        } 
-    }
+    // setPreRender(val: boolean, alpha?:number) {
+    //     this.preRender = val
+    //     if (val) {
+    //         this.setOffScreen(true, alpha)
+    //     } 
+    // }
 
     async render(rctx?: IRenderContext ) {
         this.eachChildren(ele=>{
