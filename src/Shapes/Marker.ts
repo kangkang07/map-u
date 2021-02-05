@@ -36,6 +36,7 @@ export class Marker extends MapElement {
             ctx.beginPath()
             ctx.arc(pixel.x, pixel.y, renderStyle.strokeWidth * ratio, 0, 2 * Math.PI)
             ctx.stroke()
+            ctx.fill()
         }
 
     }
